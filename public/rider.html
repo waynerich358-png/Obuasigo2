@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ObuasiGo Rider</title>
+<style>
+:root{--green:#16a05e;--dark:#0e1714;--panel:#18251f;--line:#2b3c34;--muted:#9fb2a8;--gold:#f3a11b}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--dark);color:#fff}
+.shell{max-width:760px;margin:auto;padding:20px 16px 110px}
+.top{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+.brand{font-weight:900;font-size:20px}
+.brand span{color:var(--green)}
+.dot{width:11px;height:11px;background:#6b766f;border-radius:50%;box-shadow:0 0 0 6px #6b766f22;transition:.2s}
+.dot.on{background:#33d17a;box-shadow:0 0 0 6px #33d17a22}
+.switch{width:60px;height:33px;border-radius:20px;background:#34463e;padding:4px;border:0;cursor:pointer;transition:.2s;position:relative}
+.switch span{display:block;width:25px;height:25px;border-radius:50%;background:#fff;transition:.2s}
+.switch.on{background:var(--green)}
+.switch.on span{transform:translateX(27px)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;margin-bottom:14px}
+.card h2{margin:8px 0 4px;font-size:19px}
+.muted{color:var(--muted);font-size:14px}
+.badge{display:inline-block;padding:5px 10px;border-radius:999px;background:#1f8a5633;color:#33d17a;font-size:12px;font-weight:800}
+.badge.gold{background:#fff4e033;color:var(--gold)}
+.btn{padding:11px 14px;border-radius:11px;font-weight:800;border:0;cursor:pointer;font-size:14px}
+.primary{background:var(--green);color:#fff}
+.secondary{background:#223029;color:#d9e8e0}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.earning{font-size:30px;font-weight:900}
+.chart-wrap{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px}
+canvas#chart{width:100%;height:170px;display:block}
+.timeline{border-left:2px solid #2b3c34;margin-top:12px;padding-left:16px}
+.event{position:relative;padding:7px 0;font-size:14px;color:#c6d4cd}
+.event:before{content:"";position:absolute;left:-23px;top:13px;width:10px;height:10px;border-radius:50%;background:#3a4c43}
+.event.done{color:#fff}
+.event.done:before{background:var(--green)}
+.input{width:100%;padding:12px;border:1px solid #2b3c34;border-radius:11px;background:#0f1a16;color:#fff;font:inherit;margin:6px 0 12px}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:#fff;color:#10231a;padding:12px 16px;border-radius:12px;font-weight:800;display:none;z-index:50}
+label{font-size:13px;font-weight:700;color:#c6d4cd;display:block;margin-top:6px}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="top">
+    <div class="dot" id="dot"></div>
+    <div>
+      <div class="brand">Obuasi<span>Go</span> · Rider</div>
+      <div class="muted" id="riderName">Not signed in</div>
+    </div>
+    <div style="margin-left:auto">
+      <button class="switch" id="sw" onclick="toggleOnline()"><span></span></button>
+    </div>
+  </div>
+
+  <div id="login" class="card">
+    <h2>Rider sign in</h2>
+    <p class="muted">Rider accounts are approved by ObuasiGo. Sign in with the phone number linked to your rider account.</p>
+    <label>Phone</label>
+    <input class="input" id="phone" placeholder="+233241234567">
+    <button class="btn primary" style="width:100%" onclick="sendOtp()" id="sendBtn">Send code</button>
+    <div id="otpStep" style="display:none;margin-top:12px">
+      <label>6-digit code</label>
+      <input class="input" id="code" maxlength="6" inputmode="numeric" placeholder="123456">
+      <button class="btn primary" style="width:100%" onclick="verifyOtp()">Verify &amp; enter rider mode</button>
+    </div>
+  </div>
+
+  <div id="app" class="hidden">
+    <div class="card">
+      <div class="row">
+        <div>
+          <span class="badge" id="onlineBadge">Offline</span>
+          <h2 id="reqTitle">Waiting for a request…</h2>
+          <p class="muted" id="reqSub">Go online to receive deliveries.</p>
+        </div>
+        <div class="earning" id="reqPrice">GH₵18</div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn primary" onclick="accept()">Accept delivery</button>
+        <button class="btn secondary" onclick="toast('Request skipped')">Skip</button>
+      </div>
+    </div>
+
+    <div class="card" id="active" style="display:none">
+      <div class="row"><b>Active delivery</b><span class="badge gold" id="stepLabel">Accepted</span></div>
+      <div class="timeline" id="timeline"></div>
+      <button class="btn primary" style="width:100%;margin-top:10px" onclick="advance()">Advance step</button>
+    </div>
+
+    <div class="chart-wrap">
+      <div class="row" style="margin-bottom:8px"><b>Earnings — last 7 days</b><span class="muted" id="total">—</span></div>
+      <canvas id="chart"></canvas>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <div class="muted">Today's earnings</div>
+      <div class="earning" id="today">—</div>
+      <p class="muted" id="stats">—</p>
+    </div>
+
+    <button class="btn secondary" style="width:100%;margin-top:6px" onclick="signOut()">Sign out</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const state = { token:'', user:null, online:false, step:-1 };
+const STEPS = ['Accepted','Navigating to pickup','At restaurant','Food picked up','Delivering','Arrived','Completed'];
+const money = n => 'GH₵' + Number(n||0).toFixed(2);
+function toast(m, ms=2400){ const t=$('toast'); t.textContent=m; t.style.display='block'; clearTimeout(t._t); t._t=setTimeout(()=>t.style.display='none', ms); }
+function authHeaders(){ return state.token ? { Authorization:'Bearer ' + state.token } : {}; }
+async function api(path, opts={}){
+  const r = await fetch('/api'+path, { ...opts, headers:{ 'Content-Type':'application/json', ...authHeaders(), ...(opts.headers||{}) } });
+  const d = await r.json().catch(()=>({}));
+  if (!r.ok) throw new Error(d.error || 'Request failed');
+  return d;
+}
+
+async function sendOtp(){
+  const phone = $('phone').value.trim();
+  $('sendBtn').disabled = true;
+  try {
+    const d = await api('/auth/request-otp', { method:'POST', body: JSON.stringify({ phone }) });
+    $('otpStep').style.display = 'block';
+    if (d.devOtp){ $('code').value = d.devOtp; toast('Dev OTP: ' + d.devOtp, 6000); }
+    else toast('Code sent');
+  } catch(e){ toast(e.message); }
+  $('sendBtn').disabled = false;
+}
+
+async function verifyOtp(){
+  const phone = $('phone').value.trim(), code = $('code').value.trim();
+  try {
+    const d = await api('/auth/verify-otp', { method:'POST', body: JSON.stringify({ phone, code }) });
+    state.token = d.token; state.user = d.user;
+    localStorage.setItem('obg_rider_token', d.token);
+    if (!['rider','admin','superadmin'].includes(d.user.role)){
+      toast('This account is not a rider (' + d.user.role + ')'); return;
+    }
+    enterApp();
+  } catch(e){ toast(e.message); }
+}
+
+function enterApp(){
+  $('login').classList.add('hidden');
+  $('app').classList.remove('hidden');
+  $('riderName').textContent = state.user.full_name || state.user.phone;
+  loadEarnings();
+}
+
+function signOut(){
+  state.token=''; state.user=null;
+  localStorage.removeItem('obg_rider_token');
+  $('app').classList.add('hidden');
+  $('login').classList.remove('hidden');
+}
+
+function toggleOnline(){
+  state.online = !state.online;
+  $('sw').classList.toggle('on', state.online);
+  $('dot').classList.toggle('on', state.online);
+  $('onlineBadge').textContent = state.online ? 'Online' : 'Offline';
+  $('onlineBadge').className = 'badge' + (state.online?'':' gold');
+  $('reqTitle').textContent = state.online ? 'New request — Obuasi Kitchen → Ahinsan' : 'Waiting for a request…';
+  $('reqSub').textContent   = state.online ? '2.8 km · 12 min · Food delivery' : 'Go online to receive deliveries.';
+  toast(state.online ? 'You are online' : 'You are offline');
+}
+
+function accept(){
+  if (!state.online) return toast('Go online first');
+  state.step = 0;
+  $('active').style.display = 'block';
+  renderTimeline();
+  toast('Delivery accepted');
+}
+function advance(){
+  if (state.step < 0) return;
+  state.step = Math.min(state.step+1, STEPS.length-1);
+  renderTimeline();
+  if (state.step === STEPS.length-1){
+    toast('Delivery completed ✔ GH₵18 added');
+    loadEarnings();
+  }
+}
+function renderTimeline(){
+  $('stepLabel').textContent = STEPS[state.step];
+  $('timeline').innerHTML = STEPS.map((s,i)=>`<div class="event ${i<=state.step?'done':''}">${s}</div>`).join('');
+}
+
+async function loadEarnings(){
+  try {
+    const e = await api('/rider/earnings');
+    $('total').textContent = 'Total ' + money(e.total);
+    $('today').textContent = money(e.today);
+    $('stats').textContent = e.series.reduce((n,s)=>n+s.deliveries,0) + ' deliveries · 4.9★';
+    drawChart(e.series);
+  } catch(err){ toast(err.message); }
+}
+
+function drawChart(series){
+  const c = $('chart');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = c.getBoundingClientRect();
+  c.width = rect.width * dpr; c.height = 170 * dpr;
+  const ctx = c.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  const W = rect.width, H = 170;
+  const pad = 22;
+  const labels = series.map(s => new Date(s.day).toLocaleDateString(undefined,{weekday:'short'}));
+  const values = series.map(s => s.amount);
+  const max = Math.max(...values, 20) * 1.2;
+  const gap = 8;
+  const bw = (W - pad*2 - gap*(values.length-1)) / values.length;
+
+  // grid
+  ctx.strokeStyle = '#223029'; ctx.lineWidth = 1;
+  for (let i=0;i<=4;i++){
+    const y = pad + (H - pad*2) * i/4;
+    ctx.beginPath(); ctx.moveTo(pad,y); ctx.lineTo(W-pad,y); ctx.stroke();
+  }
+
+  const todayIdx = values.length - 1;
+  values.forEach((v,i)=>{
+    const h = (v/max) * (H - pad*2);
+    const x = pad + i*(bw+gap);
+    const y = H - pad - h;
+    ctx.fillStyle = i===todayIdx ? '#33d17a' : '#1f8a56';
+    const r = Math.min(6, bw/2);
+    ctx.beginPath();
+    ctx.moveTo(x, y+r);
+    ctx.arcTo(x,y,x+r,y,r);
+    ctx.lineTo(x+bw-r,y);
+    ctx.arcTo(x+bw,y,x+bw,y+r,r);
+    ctx.lineTo(x+bw,H-pad);
+    ctx.lineTo(x,H-pad);
+    ctx.closePath(); ctx.fill();
+
+    ctx.fillStyle = '#9fb2a8'; ctx.font = '11px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText(labels[i], x+bw/2, H-6);
+    ctx.fillStyle = '#d9e8e0'; ctx.font = 'bold 11px system-ui';
+    ctx.fillText('₵'+Math.round(v), x+bw/2, y-5);
+  });
+}
+window.addEventListener('resize', ()=>{ if (state.token) loadEarnings(); });
+
+/* Restore session */
+(async function(){
+  const t = localStorage.getItem('obg_rider_token');
+  if (!t) return;
+  state.token = t;
+  try {
+    const d = await api('/me');
+    state.user = d.user;
+    if (['rider','admin','superadmin'].includes(d.user.role)) enterApp();
+    else signOut();
+  } catch { signOut(); }
+})();
+</script>
+</body>
+</html>

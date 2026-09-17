@@ -1,1 +1,509 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#087443">
+<title>ObuasiGo — Food, Delivery & Hotels</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/icon.svg">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+:root{--green:#087443;--gold:#f3a11b;--dark:#10231a;--muted:#6d7b74;--bg:#f5f7f6;--line:#e7ece9;--red:#d83a3a}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--dark);-webkit-tap-highlight-color:transparent}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer;border:0}
+.top{height:64px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 18px;gap:12px;position:sticky;top:0;z-index:20}
+.brand{font-weight:900;font-size:22px;color:var(--green);margin-right:auto}
+.brand span{color:var(--gold)}
+.pill{background:#edf7f1;color:var(--green);padding:8px 12px;border-radius:999px;font-size:13px;font-weight:700}
+.icon{width:40px;height:40px;border-radius:12px;background:#f1f5f3;color:var(--dark);font-size:18px}
+.wrap{max-width:1100px;margin:auto;padding:20px 16px 130px}
+.hero{background:linear-gradient(135deg,#087443,#0b8c52);color:#fff;border-radius:24px;padding:26px;display:grid;grid-template-columns:1.5fr .8fr;gap:20px;overflow:hidden}
+.hero h1{font-size:clamp(28px,5vw,46px);line-height:1.05;margin:8px 0}
+.hero p{color:#dff5e9;max-width:560px;margin:8px 0}
+.hero-art{display:flex;align-items:center;justify-content:center;font-size:100px}
+.badge{display:inline-block;padding:5px 10px;border-radius:999px;background:#edf7f1;color:var(--green);font-size:12px;font-weight:800}
+.badge.gold{background:#fff4e0;color:#a86a00}
+.section{margin-top:26px}
+.section h2{margin:0 0 12px}
+.muted{color:var(--muted);font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+.card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:0 3px 15px #00000008}
+.food-img{height:110px;border-radius:14px;background:linear-gradient(135deg,#ffe7bd,#fff5e6);display:flex;align-items:center;justify-content:center;font-size:52px;margin-bottom:10px}
+.price{font-weight:900;font-size:17px;margin:8px 0}
+.btn{padding:11px 14px;border-radius:11px;font-weight:800;border:0;cursor:pointer;font-size:14px}
+.primary{background:var(--green);color:#fff}
+.secondary{background:#edf3ef;color:var(--green)}
+.danger{background:#fdecec;color:#b02a2a}
+.wide{width:100%}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.input{width:100%;padding:12px;border:1px solid #dce4df;border-radius:11px;margin:6px 0 12px;outline:0;font:inherit;background:#fff}
+.input:focus{border-color:var(--green)}
+label{font-size:13px;font-weight:700;color:#374b41;display:block;margin-top:6px}
+.cart-fab{position:fixed;right:16px;bottom:90px;width:62px;height:62px;border-radius:50%;background:var(--green);color:#fff;font-size:26px;box-shadow:0 14px 34px #08744355;z-index:40;display:flex;align-items:center;justify-content:center;transition:transform .18s;transform:scale(0)}
+.cart-fab.visible{transform:scale(1)}
+.cart-fab.bump{transform:scale(1.18)}
+.cart-fab .cbadge{position:absolute;top:-4px;right:-4px;background:var(--gold);color:#10231a;font-size:12px;font-weight:900;min-width:26px;height:26px;border-radius:999px;display:flex;align-items:center;justify-content:center;padding:0 6px;border:3px solid #fff}
+.bottom{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);display:flex;justify-content:center;z-index:25}
+.bottom button{background:#fff;padding:12px 22px;color:#63716a;font-size:12px;font-weight:800}
+.bottom button.active{color:var(--green)}
+.view{display:none}
+.view.active{display:block}
+.drawer{position:fixed;inset:0;background:#0006;z-index:60;display:none}
+.drawer.show{display:block}
+.drawer-panel{width:min(380px,88vw);height:100%;background:#fff;padding:20px;overflow:auto}
+.drawer-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.menuitem{width:100%;background:#fff;text-align:left;padding:14px;border-radius:12px;margin:3px 0;font-weight:750;display:block;text-decoration:none;color:inherit}
+.menuitem:hover{edf7f1;color:var(--green)}
+.menuitem small{display:block;color:var(--muted);font-weight:500;margin-top:2px}
+.modal{position:fixed;inset:0;background:#0007;z-index:70;display:none;align-items:flex-end;justify-content:center}
+.modal.show{display:flex}
+.sheet{width:min(620px,100%);background:#fff;border-radius:24px 24px 0 0;padding:22px;max-height:92vh;overflow:auto}
+.sheet h2{margin:0 0 6px}
+.close{float:right;background:#f0f3f1;width:36px;height:36px;border-radius:50%;border:0;font-size:18px;cursor:pointer}
+.cart-line{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.cart-line .nm{flex:1;font-weight:700;font-size:15px}
+.qty{display:flex;align-items:center;gap:8px;background:#f2f6f4;border-radius:999px;padding:5px 8px}
+.qty button{background:#fff;width:28px;height:28px;border-radius:50%;font-weight:900;color:var(--green);border:0;cursor:pointer;font-size:15px}
+.summary{background:#f6faf8;border-radius:14px;padding:14px;margin-top:12px}
+.summary div{display:flex;justify-content:space-between;padding:4px 0;font-size:14px}
+.summary .tot{font-weight:900;font-size:17px;border-top:1px solid #dbe7e0;margin-top:6px;padding-top:8px}
+.toast{position:fixed;left:50%;bottom:110px;transform:translateX(-50%);background:#10231a;color:#fff;padding:12px 16px;border-radius:12px;z-index:120;display:none;box-shadow:0 10px 30px #0004;max-width:90vw;text-align:center;font-weight:600;font-size:14px}
+.timeline{border-left:2px solid #cde5d8;margin:14px 0 0;padding-left:16px}
+.event{position:relative;padding:7px 0;font-size:14px}
+.event:before{content:"";position:absolute;left:-23px;top:13px;width:10px;height:10px;border-radius:50%;background:#cfdcd5}
+.event.done:before{background:var(--green)}
+.empty{padding:30px;text-align:center;color:var(--muted)}
+.qrbox{text-align:center;padding:16px;background:#fff;border-radius:16px;border:1px solid var(--line)}
+.qrbox img{width:min(260px,72vw);height:auto;image-rendering:pixelated}
+.code-pill{display:inline-block;font-family:ui-monospace,monospace;font-size:20px;letter-spacing:5px;font-weight:900;background:#f2f6f4;border-radius:11px;padding:9px 14px;margin-top:10px}
+@media(max-width:700px){.hero{grid-template-columns:1fr}.hero-art{display:none}.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
 
+<header class="top">
+  <button class="icon" onclick="toggleMenu()">☰</button>
+  <div class="brand">Obuasi<span>Go</span></div>
+  <div class="pill" id="account">Guest</div>
+  <button class="icon" onclick="openSheet('notifications')">🔔</button>
+</header>
+
+<main class="wrap">
+  <section id="view-home" class="view active">
+    <div class="hero">
+      <div>
+        <span class="badge">OBUASI DELIVERY</span>
+        <h1>Good food.<br>Fast delivery.</h1>
+        <p>Discover local restaurants, shops and hotels around Obuasi.</p>
+        <div style="background:#fff;border-radius:14px;padding:12px 14px;color:#6c7771;margin-top:18px;cursor:pointer" onclick="openSheet('search')">⌕ Search food, restaurants, hotels…</div>
+      </div>
+      <div class="hero-art">🛵</div>
+    </div>
+
+    <div class="section">
+      <h2>Popular near you</h2>
+      <div class="grid" id="restaurantGrid"></div>
+    </div>
+
+    <div class="section">
+      <h2>Hotels &amp; stays</h2>
+      <div class="grid" id="hotelGrid"></div>
+    </div>
+  </section>
+
+  <section id="view-orders" class="view">
+    <div class="section-head" style="display:flex;justify-content:space-between;align-items:center">
+      <h2>Your orders</h2><button class="btn secondary" onclick="loadOrders()">Refresh</button>
+    </div>
+    <div id="ordersList"><div class="empty">Sign in to see your orders.</div></div>
+  </section>
+
+  <section id="view-bookings" class="view">
+    <div class="section-head" style="display:flex;justify-content:space-between;align-items:center">
+      <h2>Your stays</h2><button class="btn secondary" onclick="loadBookings()">Refresh</button>
+    </div>
+    <div id="bookingsList"><div class="empty">Sign in to see your bookings.</div></div>
+  </section>
+</main>
+
+<button class="cart-fab" id="cartFab" onclick="openCart()">🛒<span class="cbadge" id="cartCount">0</span></button>
+
+<nav class="bottom">
+  <button class="active" data-nav="home" onclick="showView('home',this)">⌂<br>Home</button>
+  <button data-nav="orders" onclick="showView('orders',this)">🧾<br>Orders</button>
+  <button data-nav="bookings" onclick="showView('bookings',this)">🏨<br>Stays</button>
+  <button onclick="toggleMenu()">☰<br>Menu</button>
+</nav>
+
+<div class="drawer" id="drawer" onclick="if(event.target===this)toggleMenu()">
+  <aside class="drawer-panel">
+    <div class="drawer-head">
+      <div class="brand">Obuasi<span>Go</span></div>
+      <button class="close" onclick="toggleMenu()">×</button>
+    </div>
+    <div class="card" style="margin-bottom:12px">
+      <div class="row">
+        <div><b id="menuName">Guest User</b><p class="muted" id="menuPhone">Sign in for a full account</p></div>
+        <button class="btn primary" onclick="openSheet('profile')">Profile</button>
+      </div>
+    </div>
+    <a class="menuitem" href="/rider.html">🛵 Rider app<small>Separate rider workspace</small></a>
+    <a class="menuitem" href="/portal.html">🏢 Staff portal<small>Admin · Vendor · Hotel</small></a>
+    <button class="menuitem" onclick="openSheet('payments')">💳 Payment details</button>
+    <button class="menuitem" onclick="openSheet('help')">🆘 Help &amp; support</button>
+    <button class="menuitem" onclick="openSheet('legal')">📄 Terms &amp; privacy</button>
+    <hr style="border:0;border-top:1px solid var(--line);margin:14px 0">
+    <button class="menuitem" id="authBtn" onclick="openAuth()">🔐 Sign in</button>
+  </aside>
+</div>
+
+<div class="modal" id="modal"><div class="sheet" id="sheet"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const state = {
+  token: localStorage.getItem('obg_token') || '',
+  user: null,
+  catalog: { restaurants: [], hotels: [] },
+  cart: JSON.parse(localStorage.getItem('obg_cart') || '[]'),
+  orders: [], bookings: []
+};
+const DELIVERY_FEE = 8;
+
+const money = n => 'GH₵' + Number(n || 0).toFixed(2);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function toast(m, ms=2400){ const t=$('toast'); t.textContent=m; t.style.display='block'; clearTimeout(t._t); t._t=setTimeout(()=>t.style.display='none', ms); }
+function closeSheet(){ $('modal').classList.remove('show'); }
+$('modal').addEventListener('click', e => { if (e.target.id==='modal') closeSheet(); });
+
+function authHeaders(){ return state.token ? { Authorization: 'Bearer ' + state.token } : {}; }
+async function api(path, opts={}){
+  const r = await fetch('/api'+path, { ...opts, headers: { 'Content-Type':'application/json', ...authHeaders(), ...(opts.headers||{}) } });
+  const d = await r.json().catch(()=>({}));
+  if (!r.ok) throw new Error(d.error || 'Request failed');
+  return d;
+}
+
+/* Navigation */
+function showView(name, btn){
+  document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'view-'+name));
+  document.querySelectorAll('.bottom button[data-nav]').forEach(b => b.classList.toggle('active', b.dataset.nav === name));
+  if (name === 'orders') loadOrders();
+  if (name === 'bookings') loadBookings();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+function toggleMenu(){ $('drawer').classList.toggle('show'); }
+
+/* Auth */
+function openAuth(){
+  $('sheet').innerHTML = `
+    <button class="close" onclick="closeSheet()">×</button>
+    <h2>Sign in to ObuasiGo</h2>
+    <p class="muted">We send a one-time code to your phone.</p>
+    <label>Phone number</label>
+    <input class="input" id="authPhone" placeholder="+233241234567" value="${state.user ? esc(state.user.phone) : ''}">
+    <button class="btn primary wide" id="authSend" onclick="sendOtp()">Send code</button>
+    <div id="otpStep" style="display:none;margin-top:14px">
+      <label>6-digit code</label>
+      <input class="input" id="authCode" maxlength="6" placeholder="123456" inputmode="numeric">
+      <button class="btn primary wide" onclick="verifyOtp()">Verify &amp; sign in</button>
+    </div>`;
+  $('modal').classList.add('show');
+}
+async function sendOtp(){
+  const phone = $('authPhone').value.trim();
+  $('authSend').disabled = true;
+  try {
+    const d = await api('/auth/request-otp', { method:'POST', body: JSON.stringify({ phone }) });
+    $('otpStep').style.display = 'block';
+    if (d.devOtp) { $('authCode').value = d.devOtp; toast('Dev OTP: ' + d.devOtp, 6000); }
+    else toast('Code sent to ' + phone);
+  } catch(e){ toast(e.message); }
+  $('authSend').disabled = false;
+}
+async function verifyOtp(){
+  const phone = $('authPhone').value.trim(), code = $('authCode').value.trim();
+  try {
+    const d = await api('/auth/verify-otp', { method:'POST', body: JSON.stringify({ phone, code }) });
+    state.token = d.token; state.user = d.user;
+    localStorage.setItem('obg_token', d.token);
+    closeSheet(); renderAccount(); toast('Welcome ' + (d.user.full_name || d.user.phone));
+    loadOrders(); loadBookings();
+  } catch(e){ toast(e.message); }
+}
+function signOut(){
+  state.token=''; state.user=null; localStorage.removeItem('obg_token');
+  renderAccount();
+  $('ordersList').innerHTML = '<div class="empty">Sign in to see your orders.</div>';
+  $('bookingsList').innerHTML = '<div class="empty">Sign in to see your bookings.</div>';
+  toast('Signed out');
+}
+function renderAccount(){
+  const u = state.user;
+  $('account').textContent = u ? (u.full_name || u.phone) : 'Guest';
+  $('menuName').textContent = u ? (u.full_name || u.phone) : 'Guest User';
+  $('menuPhone').textContent = u ? (u.phone + ' · ' + u.role) : 'Sign in for a full account';
+  const b = $('authBtn');
+  b.textContent = u ? '🚪 Sign out' : '🔐 Sign in';
+  b.onclick = u ? signOut : openAuth;
+}
+async function loadMe(){
+  if (!state.token) return renderAccount();
+  try { const d = await api('/me'); state.user = d.user; }
+  catch { state.token=''; localStorage.removeItem('obg_token'); }
+  renderAccount();
+}
+
+/* Catalog */
+async function loadCatalog(){
+  state.catalog = await api('/catalog');
+  $('restaurantGrid').innerHTML = state.catalog.restaurants.map(r => `
+    <article class="card">
+      <div class="food-img">${r.emoji}</div>
+      <b>${esc(r.name)}</b>
+      <p class="muted">${esc(r.tags)} · ${esc(r.eta)}</p>
+      <div class="price">From ${money(Math.min(...r.items.map(i=>i.price)))}</div>
+      <button class="btn primary wide" onclick="openRestaurant('${r.id}')">View menu</button>
+    </article>`).join('');
+  $('hotelGrid').innerHTML = state.catalog.hotels.map(h => `
+    <article class="card">
+      <div class="food-img">🏨</div>
+      <b>${esc(h.name)}</b>
+      <p class="muted">${esc(h.room)} · ${esc(h.perks)}</p>
+      <div class="price">${money(h.price)}/night</div>
+      <button class="btn primary wide" onclick="openBooking('${h.id}')">Book room</button>
+    </article>`).join('');
+}
+function openRestaurant(id){
+  const r = state.catalog.restaurants.find(x=>x.id===id);
+  $('sheet').innerHTML = `
+    <button class="close" onclick="closeSheet()">×</button>
+    <div class="row">
+      <div><h2 style="margin:0">${esc(r.name)}</h2><p class="muted">${esc(r.tags)} · ${esc(r.eta)}</p></div>
+      <div style="font-size:42px">${r.emoji}</div>
+    </div>
+    <div style="margin-top:10px">
+      ${r.items.map(i=>`
+        <div class="cart-line">
+          <div style="width:48px;height:48px;border-radius:12px;background:#fff5e6;display:flex;align-items:center;justify-content:center;font-size:24px">${i.emoji}</div>
+          <div class="nm">${esc(i.name)}<div class="muted">${money(i.price)}</div></div>
+          <button class="btn primary" onclick='addToCart(${JSON.stringify(r.name)}, ${JSON.stringify(i)})'>+ Add</button>
+        </div>`).join('')}
+    </div>
+    <button class="btn primary wide" style="margin-top:16px" onclick="openCart()">Open cart · ${cartCount()} item(s)</button>`;
+  $('modal').classList.add('show');
+}
+
+/* Cart */
+function cartCount(){ return state.cart.reduce((n,l)=>n+l.qty,0); }
+function cartSubtotal(){ return state.cart.reduce((n,l)=>n+l.qty*l.price,0); }
+function saveCart(){ localStorage.setItem('obg_cart', JSON.stringify(state.cart)); renderCart(); }
+function renderCart(){
+  const n = cartCount();
+  $('cartCount').textContent = n;
+  $('cartFab').classList.toggle('visible', n>0);
+}
+function addToCart(vendor, item){
+  const l = state.cart.find(x=>x.vendor===vendor && x.itemId===item.id);
+  if (l) l.qty++; else state.cart.push({vendor, itemId:item.id, name:item.name, price:item.price, emoji:item.emoji, qty:1});
+  saveCart();
+  const f = $('cartFab'); f.classList.add('bump'); setTimeout(()=>f.classList.remove('bump'), 180);
+  toast(item.name + ' added to cart');
+}
+function changeQty(i, d){
+  const l = state.cart[i]; if (!l) return;
+  l.qty += d;
+  if (l.qty <= 0) state.cart.splice(i,1);
+  saveCart();
+  if (state.cart.length) openCart(); else closeSheet();
+}
+function clearCart(){ state.cart=[]; saveCart(); closeSheet(); toast('Cart cleared'); }
+function openCart(){
+  if (!state.cart.length) return toast('Your cart is empty');
+  const vendors = [...new Set(state.cart.map(l=>l.vendor))];
+  const sub = cartSubtotal();
+  const fee = DELIVERY_FEE * vendors.length;
+  $('sheet').innerHTML = `
+    <button class="close" onclick="closeSheet()">×</button>
+    <h2>Your cart</h2>
+    <p class="muted">${vendors.length>1 ? vendors.length + ' vendors — one order each' : esc(vendors[0])}</p>
+    ${state.cart.map((l,i)=>`
+      <div class="cart-line">
+        <div style="width:44px;height:44px;border-radius:12px;background:#fff5e6;display:flex;align-items:center;justify-content:center;font-size:22px">${l.emoji||'🍽️'}</div>
+        <div class="nm">${esc(l.name)}<div class="muted">${money(l.price)}</div></div>
+        <div class="qty">
+          <button onclick="changeQty(${i},-1)">−</button><b>${l.qty}</b><button onclick="changeQty(${i},1)">+</button>
+        </div>
+      </div>`).join('')}
+    <div class="summary">
+      <div><span>Subtotal</span><b>${money(sub)}</b></div>
+      <div><span>Delivery</span><b>${money(fee)}</b></div>
+      <div class="tot"><span>Total</span><span>${money(sub+fee)}</span></div>
+    </div>
+    <label>Delivery address</label>
+    <input class="input" id="cartAddr" placeholder="e.g. Ahinsan Estate, House 12, Obuasi">
+    <label>Note for rider</label>
+    <input class="input" id="cartNote" placeholder="Call when you arrive">
+    <button class="btn primary wide" onclick="placeOrder()">Place order · ${money(sub+fee)}</button>
+    <button class="btn danger wide" style="margin-top:8px" onclick="clearCart()">Clear cart</button>`;
+  $('modal').classList.add('show');
+}
+async function placeOrder(){
+  if (!state.token){ closeSheet(); openAuth(); return toast('Sign in to place your order'); }
+  const addr = ($('cartAddr').value||'').trim();
+  if (!addr) return toast('Add a delivery address');
+  const note = ($('cartNote').value||'').trim();
+  const byVendor = {};
+  for (const l of state.cart) (byVendor[l.vendor]=byVendor[l.vendor]||[]).push(l);
+  try {
+    let created = 0;
+    for (const [vendor, lines] of Object.entries(byVendor)){
+      const total = lines.reduce((n,l)=>n+l.qty*l.price,0) + DELIVERY_FEE;
+      await api('/orders', { method:'POST', body: JSON.stringify({
+        vendor, items: lines.map(l=>({ id:l.itemId, name:l.name, price:l.price, qty:l.qty })),
+        total, deliveryFee: DELIVERY_FEE, deliveryAddress: { text: addr }, note
+      })});
+      created++;
+    }
+    state.cart = []; saveCart(); closeSheet();
+    toast(created + ' order(s) placed 🎉');
+    showView('orders'); loadOrders();
+  } catch(e){ toast(e.message); }
+}
+
+/* Orders */
+async function loadOrders(){
+  if (!state.token) return;
+  try {
+    state.orders = await api('/orders');
+    if (!state.orders.length){ $('ordersList').innerHTML = '<div class="empty">No orders yet.</div>'; return; }
+    $('ordersList').innerHTML = state.orders.map(o => `
+      <div class="card" style="margin-bottom:14px">
+        <div class="row">
+          <div>
+            <span class="badge ${o.status==='Completed'?'':'gold'}">${esc(o.status)}</span>
+            <h3 style="margin:8px 0 2px">#${esc(o.id)}</h3>
+            <p class="muted">${esc(o.vendor)} · ${o.items.reduce((n,i)=>n+i.qty,0)} item(s)</p>
+          </div>
+          <div class="price">${money(o.total)}</div>
+        </div>
+        ${o.status !== 'Completed' && o.delivery_pin ? `<div class="summary"><div style="display:block;text-align:center"><span>Give this PIN to your rider</span><div style="font-size:26px;letter-spacing:6px;font-weight:900;margin-top:4px">${esc(o.delivery_pin)}</div></div></div>` : ''}
+      </div>`).join('');
+  } catch(e){ $('ordersList').innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+}
+
+/* Bookings */
+function openBooking(hotelId){
+  const h = state.catalog.hotels.find(x=>x.id===hotelId);
+  const today = new Date().toISOString().slice(0,10);
+  const tomorrow = new Date(Date.now()+86400000).toISOString().slice(0,10);
+  $('sheet').innerHTML = `
+    <button class="close" onclick="closeSheet()">×</button>
+    <h2>Book ${esc(h.name)}</h2>
+    <p class="muted">${esc(h.room)} · ${money(h.price)}/night</p>
+    <label>Check-in</label><input class="input" type="date" id="bkIn" value="${today}">
+    <label>Check-out</label><input class="input" type="date" id="bkOut" value="${tomorrow}">
+    <label>Guests</label>
+    <select class="input" id="bkGuests"><option>1</option><option>2</option><option>3</option><option>4</option></select>
+    <button class="btn primary wide" onclick="createBooking('${h.id}')">Confirm booking</button>`;
+  $('modal').classList.add('show');
+}
+async function createBooking(hotelId){
+  if (!state.token){ closeSheet(); openAuth(); return toast('Sign in to book'); }
+  const h = state.catalog.hotels.find(x=>x.id===hotelId);
+  const ci = $('bkIn').value, co = $('bkOut').value, guests = Number($('bkGuests').value||1);
+  if (!ci || !co) return toast('Choose your dates');
+  const nights = Math.max(1, Math.round((new Date(co)-new Date(ci))/86400000));
+  try {
+    await api('/bookings', { method:'POST', body: JSON.stringify({
+      hotel: h.name, room: h.room, checkIn: ci, checkOut: co, guests, total: h.price*nights
+    })});
+    closeSheet(); toast('Booking confirmed 🎉');
+    showView('bookings'); loadBookings();
+  } catch(e){ toast(e.message); }
+}
+async function loadBookings(){
+  if (!state.token) return;
+  try {
+    state.bookings = await api('/bookings');
+    if (!state.bookings.length){ $('bookingsList').innerHTML = '<div class="empty">No bookings yet.</div>'; return; }
+    $('bookingsList').innerHTML = state.bookings.map(b => `
+      <div class="card" style="margin-bottom:14px">
+        <div class="row">
+          <div>
+            <span class="badge ${b.status==='CHECKED IN'?'':'gold'}">${esc(b.status)}</span>
+            <h3 style="margin:8px 0 2px">${esc(b.hotel)}</h3>
+            <p class="muted">${esc(b.room)} · ${b.guests} guest(s) · ${esc(b.check_in||'')} → ${esc(b.check_out||'')}</p>
+          </div>
+          <div class="price">${money(b.total)}</div>
+        </div>
+        <button class="btn primary wide" style="margin-top:10px" onclick="showBookingQr('${b.id}')">Show check-in QR</button>
+      </div>`).join('');
+  } catch(e){ $('bookingsList').innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+}
+async function showBookingQr(id){
+  $('sheet').innerHTML = '<button class="close" onclick="closeSheet()">×</button><h2>Check-in code</h2><div class="empty">Generating…</div>';
+  $('modal').classList.add('show');
+  try {
+    const d = await api('/bookings/' + id + '/qr');
+    $('sheet').innerHTML = `
+      <button class="close" onclick="closeSheet()">×</button>
+      <h2>Hotel check-in</h2>
+      <p class="muted">Show this QR to reception. They scan it to check you in.</p>
+      <div class="qrbox">
+        <img src="${d.png}" alt="Check-in QR">
+        <div class="code-pill">${esc(d.code)}</div>
+        <p class="muted" style="margin-top:8px">Or read the code aloud if scanning fails.</p>
+      </div>`;
+  } catch(e){
+    $('sheet').innerHTML = `<button class="close" onclick="closeSheet()">×</button><div class="empty">${esc(e.message)}</div>`;
+  }
+}
+
+/* Simple sheets */
+function openSheet(type){
+  const close = '<button class="close" onclick="closeSheet()">×</button>';
+  let h = close;
+  if (type === 'profile'){
+    h += `<h2>Profile</h2>
+      <label>Full name</label><input class="input" id="pfName" value="${esc(state.user?.full_name||'')}">
+      <label>Email</label><input class="input" id="pfEmail" value="${esc(state.user?.email||'')}">
+      <label>Phone</label><input class="input" value="${esc(state.user?.phone||'')}" disabled>
+      <button class="btn primary wide" onclick="saveProfile()">Save changes</button>`;
+  } else if (type === 'payments'){
+    h += `<h2>Payment details</h2>
+      <div class="card"><b>📱 Mobile Money</b><p class="muted">MTN · Vodafone · AirtelTigo</p></div>
+      <div class="card"><b>💳 Visa / Mastercard</b><p class="muted">Added securely at checkout.</p></div>`;
+  } else if (type === 'help'){
+    h += '<h2>Help &amp; support</h2>' + ['Where is my order?','Payment problem','Refund','Account & security']
+      .map(x=>`<button class="menuitem" onclick="toast('Support topic selected')">${x}</button>`).join('');
+  } else if (type === 'legal'){
+    h += '<h2>Terms &amp; privacy</h2><p class="muted">Production legal documents must be reviewed before launch.</p>';
+  } else if (type === 'notifications'){
+    h += '<h2>Notifications</h2><div class="card"><b>🛵 Order updates</b><p class="muted">We notify you the moment your rider moves.</p></div>';
+  } else if (type === 'search'){
+    h += '<h2>Search ObuasiGo</h2><input class="input" placeholder="Restaurants, food, hotels…">';
+  }
+  $('sheet').innerHTML = h;
+  $('modal').classList.add('show');
+}
+async function saveProfile(){
+  try {
+    const d = await api('/me', { method:'PATCH', body: JSON.stringify({ fullName: $('pfName').value, email: $('pfEmail').value }) });
+    state.user = d.user; renderAccount(); closeSheet(); toast('Profile saved');
+  } catch(e){ toast(e.message); }
+}
+
+/* Boot */
+renderCart();
+loadMe();
+loadCatalog().catch(()=>toast('Could not load catalog'));
+if (state.token){ loadOrders(); loadBookings(); }
+if ('serviceWorker' in navigator) window.addEventListener('load', ()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
+</script>
+</body>
+</html>
