@@ -1,0 +1,27 @@
+{
+  "name": "obuasigo",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "jsonwebtoken": "^9.0.2",
+    "twilio": "^5.8.0",
+    "pg": "^8.16.3",
+    "multer": "^2.0.2",
+    "helmet": "^8.1.0",
+    "express-rate-limit": "^8.2.1",
+    "ws": "^8.18.3",
+    "web-push": "^3.6.7",
+    "qrcode": "^1.5.4",
+    "@supabase/supabase-js": "^2.57.4"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
